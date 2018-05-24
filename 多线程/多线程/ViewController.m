@@ -10,18 +10,30 @@
 #import <pthread.h>
 @interface ViewController ()
 
+@property(nonatomic ,assign)int ticks;
+
 @end
 
 @implementation ViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    _ticks = 20;
+    [self beginThread];
     // Do any additional setup after loading the view, typically from a nib.
 }
 
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [self thread01];
+    NSURL *url = [NSURL URLWithString:@"https://www.baidu.com"];
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0) {
+        //设备系统为IOS 10.0或者以上的
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+    }else{
+        //设备系统为IOS 10.0以下的
+        [[UIApplication sharedApplication] openURL:url];
+    }
+    //    [self saleTickets];
 }
 
 //耗时操作
@@ -31,9 +43,12 @@
         NSLog(@"%d",i);
         NSLog(@"当前线程 %@",[NSThread currentThread]);
     }
+    
+   
 }
 /*
  在ios真正的多线程技术是Pthread 和 NSThread
+ GCD ,NSoperation 并发技术
  
  注意：
  多线程的开发中不要相信一次线程的执行结果
@@ -92,4 +107,104 @@ void *demo(void *param){
 
     
 }
+-(void)thread04{
+    
+    NSThread *thread = [[NSThread alloc]initWithTarget:self selector:@selector(thread4Demo:) object:@"hello world"];
+    //线程添加名称
+    thread.name = @"thread04Name A";
+    [thread start];
+}
+
+-(void)thread4Demo {
+    for (int i = 0 ; i < 2 ; i++) {
+        NSLog(@"thread4Demo===%@",[NSThread currentThread]);
+    }
+     //模拟崩溃
+    NSMutableArray *arr = [NSMutableArray array];
+//    [arr addObject:nil];
+}
+
+#pragma 互斥锁
+//售票系统
+
+-(void)saleTickets{
+
+    NSThread *thread = [[NSThread alloc]initWithTarget:self selector:@selector(saleTicketDemo) object:@"hello world"];
+    //线程添加名称
+    thread.name = @"thread04Name A";
+    [thread start];
+    
+    NSThread *thread02 = [[NSThread alloc]initWithTarget:self selector:@selector(saleTicketDemo) object:@"hello world"];
+    //线程添加名称
+    thread.name = @"thread04Name B";
+    [thread02 start];
+
+}
+
+
+-(void)saleTicketDemo{
+    //循环
+    while (YES) {
+        //互斥锁---保证锁内的代码同一时间只有一条线程执行 --范围经历小
+        //self参数可以为任意oc对象，一般用self
+        @synchronized (self){
+            [NSThread sleepForTimeInterval:1.0];
+
+            if(_ticks > 0 ){
+                
+                _ticks --;
+                NSLog(@"当前剩余===%d,当前线程 %@",_ticks,[NSThread currentThread]);
+            }else{
+                
+                NSLog(@"卖完了,当前线程%@",[NSThread currentThread]);
+                //跳出循环
+                break;
+                
+            }
+        }
+       
+    }
+    
+}
+
+//线程间通信
+-(void)beginThread{
+    
+    [self performSelectorInBackground:@selector(doweloadImage) withObject:nil];
+}
+
+-(void)doweloadImage{
+    
+    NSURL *url = [NSURL URLWithString:@"https://ss1.baidu.com/-4o3dSag_xI4khGko9WTAnF6hhy/image/h%3D300/sign=6dfd006c5e66d01661199828a72ad498/8601a18b87d6277fca09b19924381f30e924fc7c.jpg"];
+    NSData *data = [NSData dataWithContentsOfURL:url];
+    [self performSelectorOnMainThread:@selector(setImage:) withObject:[UIImage imageWithData:data] waitUntilDone:NO];
+
+}
+
+-(void)mainUI{
+    
+    //    [self performSelectorOnMainThread:@selector(setImage:) withObject:[UIImage imageWithData:NSData] waitUntilDone:NO];
+    
+}
+//更新UI
+-(void)setImage:(UIImage *)image{
+    
+    
+}
+
+//runloop
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @end
